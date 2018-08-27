@@ -1,33 +1,57 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
-<script src="/d3.js"></script>
+<script src="d3.js"></script>
 <style> body{margin: 10px;}</style>
 
-<h1> D3 Workout </h1>
-<p> Basic select DOM element and bind data to it </p>
-<div id="description"></div>
+<h1> Top 15 Altitude Airport in India </h1>
 <div id="vis"></div>
 
 <script>
-var dataset = [5, 25, 15, 20, 10];
-
-d3.select("#description")
-  .selectAll('pre')
-    .data(dataset)
+async function drawvis(){
+  dataUrl = "airports.csv"
+  const data = await d3.csv(dataUrl, parse)
+  function parse (datum) {
+    return {
+      id: +datum["id"],
+      altitude: +datum["altitude"],
+      country: datum["country"],
+      city: datum["city"],
+      iata: datum["iata"]
+    }
+  }
+  indiaData = data.filter( filterFunction )
+                .sort( sortFunction )
+                .slice(0, 15)
+  function filterFunction (d) {
+    return d.country === "India"
+  }
+  function sortFunction (a, b ) {
+    return b.altitude - a.altitude
+  }
+  margin = ({top: 20, right: 10, bottom: 20, left: 50})
+  width = 800 - margin.right - margin.left
+  height = 300 - margin.top - margin.bottom
+  y = d3.scaleLinear()
+              .rangeRound([height, 0])
+              .domain([0, d3.max(indiaData, d => d.altitude)])
+  x = d3.scaleBand()
+                .rangeRound([0, width])
+                .padding(0.1)
+                .domain(indiaData.map( d => d.city ))
+  const svg = d3.select("#vis")
+                .append("svg")
+                .attr("width", width)
+                .attr("height", height);
+  const g = svg.append("g")
+  g.selectAll("rect")
+    .data(indiaData)
   .enter()
-    .append('pre')
-    .text(function(d){ return d });
-
-// Better way to write (for future data-binding)
-var vis = d3.select("#vis");
-
-var bar = vis.selectAll("div")
-    .data(dataset);
-
-bar.enter().append("div")
-  .style("height", 25 + "px")
-  .style("margin", 2 + "px")
-  .style("background-color", "brown")
-  .style("width", function(d) { return d * 10 + "px"; });
-
+    .append("rect")
+    .attr("x", d => x(d.city))
+    .attr("y", d => y(d.altitude))
+    .attr("width", x.bandwidth())
+    .attr("height", d => height - y(d.altitude))
+    .attr("fill", "#125FFF")
+}
+drawvis();
 </script>
